@@ -1,3 +1,0 @@
-C:/Users/ZhouYu/Desktop/dc-trace-analyze/cmake-build-debug/CMakeFiles/analyze.dir
-C:/Users/ZhouYu/Desktop/dc-trace-analyze/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/ZhouYu/Desktop/dc-trace-analyze/cmake-build-debug/CMakeFiles/rebuild_cache.dir
