@@ -3,6 +3,8 @@
 
 #include "packet.h"
 
-void record_sample_event(packet_t *p);
+int record_sample_event(packet_t *p);
+
+void sample_print();
 
 #endif //ANALYZE_SAMPLE_H

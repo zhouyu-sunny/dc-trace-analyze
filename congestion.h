@@ -7,8 +7,10 @@
 
 #include "packet.h"
 
-
+#define ENABLE_PRINT_EVENT 0
 
 void record_congestion_event(packet_t *p);
+
+void congestion_print();
 
 #endif //ANALYZE_CONGESTION_H

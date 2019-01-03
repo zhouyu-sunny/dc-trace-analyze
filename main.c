@@ -28,22 +28,22 @@ int main(int argc, char ** argv) {
             }
             if (buf[i] != NULL) {
                 flag ++;
-
                 extract_packet(&packet[i], buf[i], hdr->len);
                 // printf("i %d\n", i);
                 if (packet[i].int_valid == 0) {
                     buf[i] = NULL;
                     flag --;
-                }
-                if (min < 0) {
-                    min = i;
                 } else {
-                    if (packet[i].int_valid) {
-                        if (packet[i].ts.sec < packet[min].ts.sec) {
-                            min = i;
-                        } else if (packet[i].ts.sec == packet[min].ts.sec) {
-                            if (packet[i].ts.nsec < packet[min].ts.nsec) {
+                    if (min < 0) {
+                        min = i;
+                    } else {
+                        if (packet[i].int_valid) {
+                            if (packet[i].ts.sec < packet[min].ts.sec) {
                                 min = i;
+                            } else if (packet[i].ts.sec == packet[min].ts.sec) {
+                                if (packet[i].ts.nsec < packet[min].ts.nsec) {
+                                    min = i;
+                                }
                             }
                         }
                     }
@@ -56,10 +56,18 @@ int main(int argc, char ** argv) {
         buf[min] = NULL;
         pkt_cnt++;
         record_congestion_event(&packet[min]);
-        if (pkt_cnt % 10 == 1) {
-            record_sample_event(&packet[min]);
+        if (pkt_cnt % 100 == 1) {
+            int ret = record_sample_event(&packet[min]);
+            if (ret < 0) {
+                break;
+            }
         }
     } while(flag > 0);
+
+    printf("Common:\t%d\n", pkt_cnt);
+
+    congestion_print();
+    sample_print();
 
     for (i = 0; i < argc; i++) {
         pcap_close(pcap[i]);

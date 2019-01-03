@@ -7,8 +7,8 @@ uint32_t congestion_flow_count = 0;
 
 static uint32_t congestion_threshold = 20000;
 static uint32_t congestion_delay = 3;
+// static uint32_t pkt_cnt = 0;
 static uint32_t congestion_pkt_count = 0;
-static uint32_t pkt_count;
 
 typedef struct congestion_event {
     uint32_t event_id;
@@ -34,7 +34,6 @@ static congestion_event_t * do_record_congestion_event(const flow_t* flow, const
     // printf("%d\n", latency);
     congestion_event_t * event = get_event_record(dev_id, port_id);
     int i;
-    pkt_count ++;
     congestion_pkt_count++;
     if (event->valid > 0) {
         event->queue_len = event->queue_len > SWAP16(md->egress_utilization) ? event->queue_len : SWAP16(md->egress_utilization);
@@ -54,10 +53,10 @@ static congestion_event_t * do_record_congestion_event(const flow_t* flow, const
             event->valid = congestion_delay;
         } else {
             if (event->valid == 1) {
+#if ENABLE_PRINT_FLOW
                 uint32_t duration = ts->nsec > event->start_ts.nsec ? ts->nsec - event->start_ts.nsec :  event->start_ts.nsec - ts->nsec;
-                if (event->pkt_count > 10) {
-                    printf("%u %u %u %u\n", pkt_count, congestion_pkt_count, congestion_event_count, congestion_flow_count);
-                }
+                printf("%u %u %u %u %u\n", dev_id, port_id, event->flow_count, event->pkt_count, duration);
+#endif
                 congestion_flow_count += event->flow_count;
                 memset(event, 0 , sizeof(congestion_event_t));
             } else {
@@ -85,6 +84,7 @@ static congestion_event_t * do_record_congestion_event(const flow_t* flow, const
     return NULL;
 }
 
+
 void record_congestion_event(packet_t *p) {
     if (p->int_valid) {
         int i;
@@ -102,3 +102,6 @@ void record_congestion_event(packet_t *p) {
     }
 }
 
+void congestion_print() {
+    printf("Congestion: pkt %u, flow %u, event %u\n", congestion_pkt_count, congestion_flow_count, congestion_event_count);
+}
