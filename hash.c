@@ -2,8 +2,6 @@
 #include <stddef.h>
 #include "hash.h"
 
-
-
 const uint8_t CRC8_POLY[CRC8_ALG_NUM] = {
     [CRC8] = 0x07,
     [CRC8_DARC] = 0x39,

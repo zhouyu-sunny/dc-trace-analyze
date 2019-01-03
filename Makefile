@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-c -Wall -O3
 LDFLAGS= -lpcap
-OBJS=main.o hash.o congestion.o loss.o packet.o sample.o
+OBJS=main.o hash.o congestion.o loss.o packet.o sample.o everflow.o netseer.o
 TARGETS=main
 
 all: $(TARGETS)

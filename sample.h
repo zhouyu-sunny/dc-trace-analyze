@@ -3,7 +3,8 @@
 
 #include "packet.h"
 
-int record_sample_event(packet_t *p);
+int record_sample10_event(packet_t *p);
+int record_sample100_event(packet_t *p);
 
 void sample_print();
 

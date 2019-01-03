@@ -36,9 +36,12 @@ typedef struct flow_t {
 	uint8_t proto;
 	uint16_t sport;
 	uint16_t dport;
+	uint8_t tcp_flag;
 } flow_t;
 typedef struct packet_t {
 	int packet_length;
+	int tcp_hdr_len;
+	int ip_len;
 	flow_t flow;
     const int_probe_hdr_t * probe_hdr;
     const int_md_hdr_t * md_hdrs[5];
@@ -46,7 +49,10 @@ typedef struct packet_t {
     uint8_t int_valid;
     uint32_t event_id[16];
     uint32_t event_cnt;
+    uint32_t flow_id;
     uint32_t flow_cnt[16];
+    uint16_t port_id[16];
+    uint32_t dev_id[16];
 } packet_t;
 
 static inline int cmp_flow(const flow_t * arg1, const flow_t * arg2) {

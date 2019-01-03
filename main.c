@@ -4,6 +4,8 @@
 #include "packet.h"
 #include "congestion.h"
 #include "sample.h"
+#include "everflow.h"
+#include "netseer.h"
 
 int main(int argc, char ** argv) {
     pcap_t *pcap[16];
@@ -18,7 +20,7 @@ int main(int argc, char ** argv) {
     packet_t packet[16];
     int flag = 0;
     int min = 0;
-    int pkt_cnt = 0;
+    int pkt_cnt = 0, flow_cnt = 0;
     do {
         flag = 0;
         min = -1;
@@ -56,18 +58,37 @@ int main(int argc, char ** argv) {
         buf[min] = NULL;
         pkt_cnt++;
         record_congestion_event(&packet[min]);
-        if (pkt_cnt % 100 == 1) {
-            int ret = record_sample_event(&packet[min]);
+        record_everflow_event(&packet[min]);
+        record_netseer_event(&packet[min]);
+        if (pkt_cnt % 10 == 1) {
+            int ret = record_sample10_event(&packet[min]);
             if (ret < 0) {
                 break;
             }
         }
+        if (pkt_cnt % 100 == 1) {
+            int ret = record_sample100_event(&packet[min]);
+            if (ret < 0) {
+                break;
+            }
+        }
+        if (packet[min].flow.tcp_flag == 0x02) {
+            flow_cnt++;
+        }
+        if (pkt_cnt % 1000000 == 0) {
+            printf("%d \n", pkt_cnt);
+        }
+        if (pkt_cnt > 2000000) {
+            break;
+        }
     } while(flag > 0);
 
-    printf("Common:\t%d\n", pkt_cnt);
+    printf("%d\t%d\n", pkt_cnt, flow_cnt);
 
     congestion_print();
     sample_print();
+    everflow_print();
+    netseer_print();
 
     for (i = 0; i < argc; i++) {
         pcap_close(pcap[i]);

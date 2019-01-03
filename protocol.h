@@ -25,7 +25,7 @@ typedef struct ethernet_t {
 typedef struct ipv4_t {
     uint8_t ver_ihl;
     uint8_t tos;
-    uint16_t tot_en;
+    uint16_t tot_len;
     uint16_t ipid;
     uint16_t frag;
     uint8_t ttl;
