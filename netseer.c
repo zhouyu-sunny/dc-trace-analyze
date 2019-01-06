@@ -1,7 +1,11 @@
 #include <stdio.h>
 #include "netseer.h"
 #include "hash.h"
+#include "congestion.h"
 
+#define BULK_NUM 1024 * 1
+#define CONTAINER_NUM  (1024 * BULK_NUM / 6)
+#define LATENCY_SHIFT 16
 typedef struct ns_key {
     uint32_t sip;
     uint32_t dip;
@@ -14,11 +18,12 @@ typedef struct ns_key {
 
 #define NS_KEY_SIZE sizeof(ns_key_t)
 
-static uint8_t ns_record[65536 * 8];
+static uint8_t ns_event_record[65536 * 8];
+static uint32_t ns_flow_record[65536 *8][16];
 static uint32_t ns_event_cnt = 0;
 static uint32_t ns_flow_cnt = 0;
 static uint32_t ns_pkt_cnt = 0;
-// static uint32_t fp_cnt = 0;
+static uint32_t ns_fp_cnt = 0;
 static uint32_t ns_fn_cnt = 0;
 
 typedef struct ns_container_t {
@@ -26,15 +31,13 @@ typedef struct ns_container_t {
     uint16_t flow_digest;
     uint16_t pkt_cnt;
     uint16_t ts;
+    uint16_t valid;
 } ns_container_t;
 
-#define BULK_NUM 16
-#define CONTAINER_NUM 90112 * BULK_NUM
-
-ns_container_t containers[CONTAINER_NUM];
+ns_container_t ns_containers[CONTAINER_NUM];
 
 void record_netseer_event(packet_t *p) {
-    int i, flag = 0;
+    int i, j, flag = 0;
     if (p->event_cnt == 0) {
         return;
     }
@@ -45,38 +48,79 @@ void record_netseer_event(packet_t *p) {
                 .proto = p->flow.proto,
                 .dip = p->flow.dip,
                 .sip = p->flow.sip,
-                .dev_id = p->dev_id[i],
-                .port_id = p->port_id[i]
+                //.dev_id = p->flow_id,
+                .port_id = (uint16_t) (p->event_id[i] % 1000)
+                //.dev_id = p->dev_id[i],
+                //.port_id = p->port_id[i]
         };
         uint32_t flow_idx = hash_crc32(&key, NS_KEY_SIZE, CRC32Q) % CONTAINER_NUM;
         uint16_t flow_digest = (uint16_t) (hash_crc32(&key, NS_KEY_SIZE, CRC32C) % 65536);
-        ns_container_t *container = &containers[flow_idx];
+        ns_container_t *container = &ns_containers[flow_idx];
         // printf("idx %d %d\n", flow_idx, flow_digest);
         if (container->flow_digest == flow_digest) {
             if (key_compare(&key, &container->key, NS_KEY_SIZE) == 1) {
                 ns_fn_cnt ++;
             } else {
-                printf("1\n");
-            }
-            container->pkt_cnt++;
-        } else {
-            container->pkt_cnt = 0;
-            container->key = key;
-            container->flow_digest = flow_digest;
-            container->ts = 
-            flag = 1;
-            for (i = 0; i < p->event_cnt; i++) {
-                if (ns_record[p->event_id[i]] == 0) {
-                    ns_event_cnt++;
-                    ns_record[p->event_id[i]] = 1;
-                    ns_flow_cnt ++;
-                } else {
-                    if (ns_record[p->event_id[i]] < (uint8_t) p->flow_cnt[i]) {
-                        ns_flow_cnt ++;
-                        ns_record[p->event_id[i]] = (uint8_t) p->flow_cnt[i];
+                uint16_t ts = (uint16_t)(p->ts.nsec >> LATENCY_SHIFT);
+                if (ts > container->ts) {
+                    container->ts = ts;
+                    flag = 1;
+                    if (ns_event_record[p->event_id[i]] == 0) {
+                        ns_event_cnt++;
+                        ns_flow_cnt++;
+                        ns_event_record[p->event_id[i]]++;
+                        ns_flow_record[p->event_id[i]][0] = p->flow_id;
+                    } else {
+                        for (j = 0; j < ns_event_record[p->event_id[i]]; j++) {
+                            if (ns_flow_record[p->event_id[i]][j] == p->flow_id) {
+                                break;
+                            }
+                        }
+                        if (j == ns_event_record[p->event_id[i]]) {
+                            ns_flow_record[p->event_id[i]][j] = p->flow_id;
+                            ns_event_record[p->event_id[i]]++;
+                            ns_flow_cnt++;
+                        }
                     }
                 }
             }
+            container->pkt_cnt++;
+        } else {
+            // printf("%d\n", container->pkt_cnt);
+            container->pkt_cnt = 1;
+            container->key = key;
+            container->flow_digest = flow_digest;
+            container->ts  =(uint16_t) (p->ts.nsec >> LATENCY_SHIFT);
+            flag = 1;
+            if (ns_event_record[p->event_id[i]] == 0) {
+                ns_event_cnt++;
+                ns_flow_cnt++;
+                ns_event_record[p->event_id[i]]++;
+                ns_flow_record[p->event_id[i]][0] = p->flow_id;
+            } else {
+                for (j = 0; j < ns_event_record[p->event_id[i]]; j++) {
+                    if (ns_flow_record[p->event_id[i]][j] == p->flow_id) {
+                        break;
+                    }
+                }
+                if (j == ns_event_record[p->event_id[i]]) {
+                    ns_flow_record[p->event_id[i]][j] = p->flow_id;
+                    ns_event_record[p->event_id[i]]++;
+                    ns_flow_cnt++;
+                }
+            }
+            /*
+            if (ns_event_record[p->event_id[i]] == 0) {
+                ns_event_cnt++;
+                ns_event_record[p->event_id[i]] = 1;
+                ns_flow_cnt ++;
+            } else {
+                if (ns_event_record[p->event_id[i]] < (uint8_t) p->flow_cnt[i]) {
+                    ns_flow_cnt ++;
+                    ns_event_record[p->event_id[i]] = (uint8_t) p->flow_cnt[i];
+                }
+            }
+             */
         }
     }
     if (flag == 1) {
@@ -85,5 +129,45 @@ void record_netseer_event(packet_t *p) {
 }
 
 void netseer_print() {
-    printf("NS\t%u\t%u\t%u\t%u\n", ns_pkt_cnt, ns_flow_cnt, ns_event_cnt, ns_fn_cnt);
+    printf("NS\t%u\t%u\t%u\n", ns_pkt_cnt, ns_flow_cnt, ns_event_cnt
+            //get_congestion_flow_num() - ns_flow_cnt,
+            //get_congestion_event_num() - ns_event_cnt
+            );
+}
+
+
+void record_netseer_flow(packet_t *p) {
+    ns_pkt_cnt ++;
+    ns_key_t key = {
+            .dport = p->flow.dport,
+            .sport = p->flow.sport,
+            .proto = p->flow.proto,
+            .dip = p->flow.dip,
+            .sip = p->flow.sip,
+    };
+    uint32_t flow_idx = hash_crc32(&key, NS_KEY_SIZE, CRC32Q) % CONTAINER_NUM;
+    // printf("%d\n", CONTAINER_NUM);
+    uint16_t flow_digest = (uint16_t) (hash_crc32(&key, NS_KEY_SIZE, CRC32C) % 65536);
+    ns_container_t *container = &ns_containers[flow_idx];
+    if (container->flow_digest == flow_digest) {
+        if (key_compare(&key, &container->key, NS_KEY_SIZE) == 1) {
+            ns_fn_cnt ++;
+        }
+        container->pkt_cnt++;
+    } else {
+        if (container->valid == 0) {
+            ns_flow_cnt ++;
+        } else {
+            ns_fp_cnt ++;
+        }
+        container->pkt_cnt = 0;
+        container->key = key;
+        container->flow_digest = flow_digest;
+        container->valid = 1;
+    }
+}
+
+
+void netseer_flow_print() {
+    printf("%u\t%u\t%u\t%u\n", ns_pkt_cnt, ns_flow_cnt, ns_fp_cnt, ns_fn_cnt);
 }

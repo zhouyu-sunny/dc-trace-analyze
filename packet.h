@@ -36,13 +36,13 @@ typedef struct flow_t {
 	uint8_t proto;
 	uint16_t sport;
 	uint16_t dport;
-	uint8_t tcp_flag;
 } flow_t;
 typedef struct packet_t {
 	int packet_length;
 	int tcp_hdr_len;
 	int ip_len;
 	flow_t flow;
+	uint8_t tcp_flag;
     const int_probe_hdr_t * probe_hdr;
     const int_md_hdr_t * md_hdrs[5];
     ts_t ts;

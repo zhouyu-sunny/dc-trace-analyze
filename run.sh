@@ -1,6 +1,3 @@
 #!/usr/bin/env bash
-CUR_PATH=`pwd`
-cp analyze $1
-cd $1
-./analyze h1.pcap h2.pcap h3.pcap h4.pcap h5.pcap h6.pcap h7.pcap h8.pcap
-cd $CUR_PATH
+nice -n -20 ./analyze $1/h1.pcap $1/h2.pcap $1/h3.pcap $1/h4.pcap $1/h5.pcap $1/h6.pcap $1/h7.pcap $1/h8.pcap
+

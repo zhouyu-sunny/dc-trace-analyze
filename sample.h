@@ -5,6 +5,7 @@
 
 int record_sample10_event(packet_t *p);
 int record_sample100_event(packet_t *p);
+int record_sample1000_event(packet_t *p);
 
 void sample_print();
 

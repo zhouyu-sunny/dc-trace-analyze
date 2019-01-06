@@ -13,4 +13,10 @@ void record_congestion_event(packet_t *p);
 
 void congestion_print();
 
+int get_congestion_event_num();
+
+int get_congestion_flow_num();
+
+int is_signal_pkt(packet_t * p);
+
 #endif //ANALYZE_CONGESTION_H

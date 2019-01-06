@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "everflow.h"
+#include "congestion.h"
 
 static uint8_t ef_event_record[65536 * 8];
 static uint8_t ef_flow_record[65536 * 8];
@@ -22,8 +23,8 @@ typedef struct ef_container_t {
     uint32_t flow_id;
 } ef_container_t;
 
-ef_container_t containers[1024];
-int container_cnt = 0;
+ef_container_t ns_containers[1024];
+int congestion_container_cnt = 0;
 uint32_t flow_id;
 
 static int cmp_key(ef_key_t * key, flow_t * flow) {
@@ -42,34 +43,19 @@ static int cmp_key(ef_key_t * key, flow_t * flow) {
     return 0;
 }
 
-int is_signal_pkt(packet_t * p) {
-    /*
-    int len = 34;
-    len += p->tcp_hdr_len;
-    if (p->int_valid) {
-        len += 28;
-        len += p->probe_hdr->hop_count * 32;
-    }
-     */
 
-    if ((p->flow.tcp_flag & 0x8) != 0) {
-        return 1;
-    }
-    return 0;
-    //return (p->packet_length - len) == 8;
-}
 
 void record_everflow_event(packet_t *p) {
     int i;
     ef_container_t * container = NULL;
-    for (i = 0; i < container_cnt; i++) {
-        if (cmp_key(&containers[i].key, &p->flow) == 0) {
-            container = &containers[i];
+    for (i = 0; i < congestion_container_cnt; i++) {
+        if (cmp_key(&ns_containers[i].key, &p->flow) == 0) {
+            container = &ns_containers[i];
             break;
         }
     }
     if (container == NULL) {
-        container = &containers[container_cnt++];
+        container = &ns_containers[congestion_container_cnt++];
         container->key.dport = p->flow.dport;
         container->key.sport = p->flow.sport;
         container->key.proto = p->flow.proto;
@@ -78,7 +64,7 @@ void record_everflow_event(packet_t *p) {
         container->flow_id = flow_id++;
         container->current_id = 0;
     }
-    if (container_cnt > 1000) {
+    if (congestion_container_cnt > 1000) {
         exit(1);
     }
 
@@ -104,9 +90,13 @@ void record_everflow_event(packet_t *p) {
     }
     p->flow.sport += container->current_id;
     p->flow.dport += container->current_id;
-    p->flow_id = container->flow_id;
+    // p->flow_id = container->flow_id;
 }
 
 void everflow_print() {
     printf("EF\t%u\t%u\t%u\n", ef_pkt_cnt, ef_flow_cnt, ef_event_cnt);
+}
+
+int get_flow_num() {
+    return ef_pkt_cnt;
 }

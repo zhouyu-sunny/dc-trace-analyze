@@ -29,7 +29,7 @@ extract_packet(packet_t * p, const uint8_t * buf, uint32_t length)
         p->ip_len = SWAP16(ipv4->tot_len);
         if (ipv4->proto == IPPROTO_TCP) {
             tcp = mtod_offset(buf, tcp_t *, offset);
-            p->flow.tcp_flag = tcp->ctrl;
+            p->tcp_flag = tcp->ctrl;
             p->flow.sport = tcp->src_port;
             p->flow.dport = tcp->dst_port;
             p->tcp_hdr_len = tcp->flag >> 2;
@@ -42,8 +42,8 @@ extract_packet(packet_t * p, const uint8_t * buf, uint32_t length)
                     offset += INT_MD_HDR_SIZE;
                 }
                 p->int_valid = 1;
-                p->ts.nsec = SWAP32(p->md_hdrs[0]->rx_ts_nsec);
-                p->ts.sec = SWAP32(p->md_hdrs[0]->rx_ts_sec);
+                p->ts.nsec = SWAP32(p->md_hdrs[p->probe_hdr->hop_count - 1]->rx_ts_nsec);
+                p->ts.sec = SWAP32(p->md_hdrs[p->probe_hdr->hop_count - 1]->rx_ts_sec);
             } else {
                 printf("%x %x\n", p->probe_hdr->marker2, p->probe_hdr->marker1);
             }

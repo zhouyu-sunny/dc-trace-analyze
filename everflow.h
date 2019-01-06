@@ -13,4 +13,6 @@ void record_everflow_event(packet_t *p);
 
 void everflow_print();
 
+int get_flow_num();
+
 #endif //ANALYZE_EVERFLOW_H
