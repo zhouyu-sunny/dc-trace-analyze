@@ -4,8 +4,8 @@
 #include "congestion.h"
 
 #define BULK_NUM 1024 * 1
-#define CONTAINER_NUM  (1024 * BULK_NUM / 6)
-#define LATENCY_SHIFT 16
+#define CONTAINER_NUM  1 //(1024 * BULK_NUM / 6)
+#define LATENCY_SHIFT 24
 typedef struct ns_key {
     uint32_t sip;
     uint32_t dip;
@@ -25,6 +25,8 @@ static uint32_t ns_flow_cnt = 0;
 static uint32_t ns_pkt_cnt = 0;
 static uint32_t ns_fp_cnt = 0;
 static uint32_t ns_fn_cnt = 0;
+uint64_t ns_byte_cnt = 0;
+uint64_t ns_int_byte_cnt = 0;
 
 typedef struct ns_container_t {
     ns_key_t key;
@@ -33,9 +35,10 @@ typedef struct ns_container_t {
     uint16_t ts;
     uint16_t valid;
 } ns_container_t;
-
 ns_container_t ns_containers[CONTAINER_NUM];
 
+
+int fp_cnt = 0;
 void record_netseer_event(packet_t *p) {
     int i, j, flag = 0;
     if (p->event_cnt == 0) {
@@ -62,8 +65,9 @@ void record_netseer_event(packet_t *p) {
                 ns_fn_cnt ++;
             } else {
                 uint16_t ts = (uint16_t)(p->ts.nsec >> LATENCY_SHIFT);
+
                 if (ts > container->ts) {
-                    container->ts = ts;
+                    //container->ts = ts;
                     flag = 1;
                     if (ns_event_record[p->event_id[i]] == 0) {
                         ns_event_cnt++;
@@ -80,9 +84,12 @@ void record_netseer_event(packet_t *p) {
                             ns_flow_record[p->event_id[i]][j] = p->flow_id;
                             ns_event_record[p->event_id[i]]++;
                             ns_flow_cnt++;
+                        } else {
+                           //printf("-- %d\n", fp_cnt++);
                         }
                     }
                 }
+                container->ts = ts;
             }
             container->pkt_cnt++;
         } else {
@@ -107,6 +114,8 @@ void record_netseer_event(packet_t *p) {
                     ns_flow_record[p->event_id[i]][j] = p->flow_id;
                     ns_event_record[p->event_id[i]]++;
                     ns_flow_cnt++;
+                } else {
+//                    printf("%d\n", fp_cnt++);
                 }
             }
             /*
@@ -125,11 +134,13 @@ void record_netseer_event(packet_t *p) {
     }
     if (flag == 1) {
         ns_pkt_cnt++;
+        ns_byte_cnt += p->packet_length;
+        ns_int_byte_cnt += p->int_pkt_len;
     }
 }
 
 void netseer_print() {
-    printf("NS\t%u\t%u\t%u\n", ns_pkt_cnt, ns_flow_cnt, ns_event_cnt
+    printf("NS\t%u\t%u\t%u\t%lu\t%lu\n", ns_pkt_cnt, ns_flow_cnt, ns_event_cnt, ns_byte_cnt, ns_int_byte_cnt
             //get_congestion_flow_num() - ns_flow_cnt,
             //get_congestion_event_num() - ns_event_cnt
             );
@@ -169,5 +180,5 @@ void record_netseer_flow(packet_t *p) {
 
 
 void netseer_flow_print() {
-    printf("%u\t%u\t%u\t%u\n", ns_pkt_cnt, ns_flow_cnt, ns_fp_cnt, ns_fn_cnt);
+    printf("%u\t%u\t%u\t%u\t%lu\t%lu\n", ns_pkt_cnt, ns_flow_cnt, ns_fp_cnt, ns_fn_cnt, ns_byte_cnt, ns_int_byte_cnt);
 }

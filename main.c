@@ -97,7 +97,6 @@ void fb_test() {
 
             record_netseer_flow(&p);
             pkt_cnt++;
-
             if (pkt_cnt >= threshold) {
                 // printf("X %d\n", threshold);
                 netseer_flow_print();
@@ -133,6 +132,9 @@ int main(int argc, char ** argv) {
         int flag = 0;
         int min = 0;
         int pkt_cnt = 0, flow_cnt = 0;
+        uint64_t byte_cnt = 0;
+        uint64_t int_byte_cnt = 0;
+        uint64_t orig_byte_cnt = 0;
         do {
             flag = 0;
             min = -1;
@@ -143,7 +145,6 @@ int main(int argc, char ** argv) {
                 if (buf[i] != NULL) {
                     flag++;
                     extract_packet(&packet[i], buf[i], hdr->len);
-                    // printf("i %d\n", i);
                     if (packet[i].int_valid == 0) {
                         buf[i] = NULL;
                         flag--;
@@ -169,18 +170,19 @@ int main(int argc, char ** argv) {
             }
             buf[min] = NULL;
             pkt_cnt++;
+            byte_cnt += packet[min].packet_length;
+            int_byte_cnt += packet[min].int_pkt_len;
+            orig_byte_cnt += packet[min].orig_packet_length;
             record_congestion_event(&packet[min]);
             record_everflow_event(&packet[min]);
             record_netseer_event(&packet[min]);
-            /*
+
             if (pkt_cnt % 10 == 1) {
                 int ret = record_sample10_event(&packet[min]);
                 if (ret < 0) {
                     break;
                 }
             }
-             */
-            /*
             if (pkt_cnt % 100 == 1) {
                 int ret = record_sample100_event(&packet[min]);
                 if (ret < 0) {
@@ -193,7 +195,7 @@ int main(int argc, char ** argv) {
                     break;
                 }
             }
-             */
+
 
             if (packet[min].tcp_flag == 0x02) {
                 flow_cnt++;
@@ -208,11 +210,11 @@ int main(int argc, char ** argv) {
             }
         } while (flag > 0);
 
-        printf("ALL\t%d\t%d\t%d\n", pkt_cnt, get_congestion_flow_num(), get_congestion_event_num());
-
+        printf("ALL\t%d\t%d\t%d\t%lu\t%lu\n", pkt_cnt, get_congestion_flow_num(), get_congestion_event_num(), orig_byte_cnt, byte_cnt);
+        //printf("SS\t%d\t%d\t%d\t%llu\t%llu\n", )
         congestion_print();
-        //sample_print();
-        //everflow_print();
+        sample_print();
+        everflow_print();
         netseer_print();
 
         for (i = 0; i < argc; i++) {

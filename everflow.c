@@ -9,6 +9,9 @@ static uint32_t ef_event_cnt = 0;
 static uint32_t ef_flow_cnt = 0;
 static uint32_t ef_pkt_cnt = 0;
 
+uint64_t ef_byte_cnt = 0;
+uint64_t ef_int_byte_cnt = 0;
+
 typedef struct ef_key_t {
     uint32_t sip;
     uint32_t dip;
@@ -72,6 +75,8 @@ void record_everflow_event(packet_t *p) {
         if (is_signal_pkt(p)) {
             // printf("%d %d\n", p->tcp_hdr_len, p->packet_length);
             ef_pkt_cnt ++;
+            ef_byte_cnt += p->packet_length;
+            ef_int_byte_cnt += p->int_pkt_len;
             container->current_id ++;
             container->flow_id = flow_id++;
             for (i = 0; i < p->event_cnt; i++) {
@@ -94,7 +99,7 @@ void record_everflow_event(packet_t *p) {
 }
 
 void everflow_print() {
-    printf("EF\t%u\t%u\t%u\n", ef_pkt_cnt, ef_flow_cnt, ef_event_cnt);
+    printf("EF\t%u\t%u\t%u\t%lu\t%lu\n", ef_pkt_cnt, ef_flow_cnt, ef_event_cnt,ef_byte_cnt, ef_int_byte_cnt);
 }
 
 int get_flow_num() {

@@ -10,6 +10,9 @@ static uint32_t congestion_threshold = 20000;
 static uint32_t congestion_delay = 3;
 static uint32_t flow_id = 0;
 static uint32_t congestion_pkt_count = 0;
+
+static uint64_t congestion_byte_count = 0;
+static uint64_t congestion_int_byte_count = 0;
 typedef struct congestion_key_t {
     uint32_t sip;
     uint32_t dip;
@@ -196,13 +199,20 @@ void record_congestion_event(packet_t *p) {
         }
         if (flag) {
             congestion_pkt_count ++;
+            congestion_byte_count += p->packet_length;
+            congestion_int_byte_count += p->int_pkt_len;
         }
     }
 }
 
 void congestion_print() {
-    printf("T\t%u\t%u\t%u\n", congestion_pkt_count, congestion_flow_count, congestion_event_count);
+    printf("T\t%u\t%u\t%u\t%lu\t%lu\n", congestion_pkt_count, congestion_flow_count, congestion_event_count, congestion_byte_count, congestion_int_byte_count);
 }
+
+int get_congestion_pkt_num() {
+    return congestion_pkt_count;
+}
+
 
 int get_congestion_flow_num() {
     return congestion_flow_count;

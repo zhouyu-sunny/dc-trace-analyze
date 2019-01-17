@@ -39,6 +39,8 @@ typedef struct flow_t {
 } flow_t;
 typedef struct packet_t {
 	int packet_length;
+	int orig_packet_length;
+	int int_pkt_len;
 	int tcp_hdr_len;
 	int ip_len;
 	flow_t flow;
