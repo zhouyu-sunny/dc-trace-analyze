@@ -51,6 +51,6 @@ extract_packet(packet_t * p, const uint8_t * buf, uint32_t length)
     }
     if(p->int_valid) {
         p->orig_packet_length = p->packet_length - INT_PROBE_HDR_SIZE - p->probe_hdr->hop_count* INT_MD_HDR_SIZE;
-        p->int_pkt_len = 14 + IPv4_HDR_SIZE + TCP_HDR_SIZE + INT_PROBE_HDR_SIZE + p->probe_hdr->hop_count* INT_MD_HDR_SIZE;
+        p->int_pkt_len = 14 + IPv4_HDR_SIZE + TCP_HDR_SIZE + INT_PROBE_HDR_SIZE + p->probe_hdr->hop_count* INT_MD_HDR_SIZE + IPv4_HDR_SIZE + 14 + 4;
     }
 }

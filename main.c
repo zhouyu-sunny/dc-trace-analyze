@@ -123,6 +123,17 @@ int main(int argc, char ** argv) {
         fb_test();
     }
     else {
+
+        uint32_t prev_ts = 0;
+        uint32_t prev_pkt_cnt = 0;
+        uint32_t prev_orig_byte_cnt = 0;
+        uint32_t prev_congestion_pkt_cnt = 0;
+        uint32_t prev_congestion_byte_cnt = 0;
+        uint32_t prev_ns_pkt_cnt = 0;
+        uint32_t prev_ns_byte_cnt = 0;
+
+
+
         for (i = 0; i < argc; i++) {
             char errbuf[PCAP_ERRBUF_SIZE];
             pcap[i] = pcap_open_offline(argv[i + 1], errbuf);
@@ -208,13 +219,52 @@ int main(int argc, char ** argv) {
             if (pkt_cnt > 200000000) {
                 break;
             }
+
+            if (prev_ts == 0){
+                prev_ts = hdr[min].ts.tv_sec;
+                prev_pkt_cnt = (uint32_t)pkt_cnt;
+                prev_orig_byte_cnt = (uint32_t)orig_byte_cnt;
+                prev_congestion_byte_cnt = get_congestion_int_byte_cnt();
+                prev_congestion_pkt_cnt = get_congestion_pkt_cnt();
+
+                prev_ns_pkt_cnt = get_ns_pkt_cnt();
+                prev_ns_byte_cnt = get_ns_int_byte_cnt();
+                printf("1231 %d %d\n", min, packet[min].ts.sec);
+            }
+
+            if (hdr[min].ts.tv_sec > prev_ts) {
+                prev_pkt_cnt = (uint32_t)(pkt_cnt - prev_pkt_cnt);
+                prev_orig_byte_cnt = (uint32_t)(orig_byte_cnt - prev_orig_byte_cnt);
+
+                prev_congestion_byte_cnt = get_congestion_int_byte_cnt() - prev_congestion_byte_cnt;
+                prev_congestion_pkt_cnt = get_congestion_pkt_cnt() - prev_congestion_pkt_cnt;
+                prev_ns_pkt_cnt = get_ns_pkt_cnt() - prev_ns_pkt_cnt;
+                prev_ns_byte_cnt = get_ns_int_byte_cnt() - prev_ns_byte_cnt;
+
+
+                printf("%d\t%d\t%d\t%d\t%d\t%d\n", prev_pkt_cnt,
+                        prev_orig_byte_cnt,
+                        prev_congestion_pkt_cnt,
+                        prev_congestion_byte_cnt,
+                        prev_ns_pkt_cnt,
+                        prev_ns_byte_cnt);
+
+
+                prev_ts = hdr[min].ts.tv_sec;
+                prev_pkt_cnt = (uint32_t) pkt_cnt;
+                prev_orig_byte_cnt = (uint32_t) orig_byte_cnt;
+                prev_congestion_byte_cnt = get_congestion_int_byte_cnt();
+                prev_congestion_pkt_cnt = get_congestion_pkt_cnt();
+                prev_ns_pkt_cnt = get_ns_pkt_cnt();
+                prev_ns_byte_cnt = get_ns_int_byte_cnt();
+            }
         } while (flag > 0);
 
         printf("ALL\t%d\t%d\t%d\t%lu\t%lu\n", pkt_cnt, get_congestion_flow_num(), get_congestion_event_num(), orig_byte_cnt, byte_cnt);
         //printf("SS\t%d\t%d\t%d\t%llu\t%llu\n", )
-        congestion_print();
         sample_print();
         everflow_print();
+        congestion_print();
         netseer_print();
 
         for (i = 0; i < argc; i++) {

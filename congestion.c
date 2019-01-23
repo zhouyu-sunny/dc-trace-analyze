@@ -221,3 +221,11 @@ int get_congestion_flow_num() {
 int get_congestion_event_num() {
     return congestion_event_count;
 }
+
+uint32_t get_congestion_pkt_cnt() {
+    return congestion_pkt_count;
+}
+
+uint32_t get_congestion_int_byte_cnt() {
+    return congestion_int_byte_count;
+}

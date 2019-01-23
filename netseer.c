@@ -4,7 +4,7 @@
 #include "congestion.h"
 
 #define BULK_NUM 1024 * 1
-#define CONTAINER_NUM  1 //(1024 * BULK_NUM / 6)
+#define CONTAINER_NUM  512 //(1024 * BULK_NUM / 6)
 #define LATENCY_SHIFT 24
 typedef struct ns_key {
     uint32_t sip;
@@ -181,4 +181,11 @@ void record_netseer_flow(packet_t *p) {
 
 void netseer_flow_print() {
     printf("%u\t%u\t%u\t%u\t%lu\t%lu\n", ns_pkt_cnt, ns_flow_cnt, ns_fp_cnt, ns_fn_cnt, ns_byte_cnt, ns_int_byte_cnt);
+}
+
+uint32_t get_ns_pkt_cnt() {
+    return ns_pkt_cnt;
+}
+uint32_t get_ns_int_byte_cnt() {
+    return ns_int_byte_cnt;
 }
